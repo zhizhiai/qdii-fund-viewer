@@ -78,6 +78,18 @@
 - `fetchAllNav(codes, onProgress)`：串行批量加载（每只间隔 300ms 防限流）
 - 当前榜单未使用实时净值显示，但接口保留备用
 
+## 代码源规则
+
+**GitHub main 分支是唯一可信代码源，优先于本地文件。**
+
+1. 所有人工修改优先提交到 GitHub
+2. 若 GitHub 出现新提交，必须先同步到当前项目再继续开发
+3. 不得覆盖 GitHub 中较新的代码
+4. 若检测到冲突，提示冲突文件及解决建议
+5. 发布（CloudStudio 部署）前以 GitHub 最新版本为准
+
+同步流程：`git fetch origin` → 对比差异 → `git rebase origin/main` → 再开始修改
+
 ## 修改注意事项
 
 1. **FUND_DB 更新**：修改基金数据后需同步更新 `DATA_VERSION`（第 282 行）和底部"榜单数据截止日期"
