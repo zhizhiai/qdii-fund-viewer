@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QDII 额度动态查询</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --line: #dfe5ef;
+      --navy: #10243f;
+      --gold: #b88a3b;
+      --bg: #f5f7fb;
+      --card: #fff;
+      --risk: #c83232;
+      --watch: #9a6a16;
+      --ok: #0b7a52;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    header {
+      background: var(--navy);
+      color: #fff;
+      padding: 28px 18px 24px;
+    }
+    .wrap { width: min(1000px, calc(100% - 32px)); margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: 0; }
+    .nav-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .nav-btn {
+      background: rgba(255,255,255,.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,.28); }
+    main { padding: 18px 0 34px; }
+    .search {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+    label { display: block; color: var(--muted); font-size: 14px; margin-bottom: 6px; }
+    input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 12px;
+      font-size: 17px;
+    }
+    button {
+      height: 42px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--navy);
+      color: #fff;
+      padding: 0 16px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 0; }
+    .chip {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    h2 { margin: 0 0 12px; font-size: 18px; }
+    .result h3 { margin: 0 0 6px; font-size: 22px; }
+    .meta { color: var(--muted); font-size: 14px; margin-bottom: 10px; }
+    .verdict {
+      border-radius: 8px;
+      padding: 12px;
+      margin: 12px 0;
+      background: #f6f8fb;
+      border: 1px solid var(--line);
+    }
+    .verdict.risk { color: var(--risk); border-color: #f2c8c8; background: #fff6f6; }
+    .verdict.watch { color: var(--watch); border-color: #ead8ad; background: #fffaf0; }
+    .verdict.neutral { color: var(--ok); border-color: #bfe3d3; background: #f3fbf7; }
+    dl { display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; margin: 0; }
+    dt { color: var(--muted); }
+    dd { margin: 0; }
+    .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    a.btn {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 10px;
+      border-radius: 6px;
+      color: var(--navy);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-size: 14px;
+    }
+    .note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+    .rank-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .rank-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+      position: relative;
+    }
+    .rank-head {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: start;
+    }
+    .rank-no {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #eef4fb;
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .rank-title {
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+    .mini { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .rank-meta {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 8px;
+      margin-top: 10px;
+      align-items: center;
+    }
+    .positive { color: #b42318; font-weight: 700; }
+    .nav-up { color: #b42318; }
+    .nav-down { color: #156e45; }
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      background: #fff7e8;
+      color: #8a5a08;
+      border: 1px solid #f0d39b;
+    }
+    .loading { color: var(--muted); }
+    .nav-loading { color: var(--muted); font-size: 13px; }
+    @media (max-width: 780px) {
+      .wrap { width: min(100% - 24px, 560px); }
+      header { padding: 22px 12px 18px; }
+      main { padding-top: 12px; }
+      .search { grid-template-columns: 1fr; padding: 12px; }
+      .card { padding: 12px; border-radius: 8px; }
+      h1 { font-size: 23px; }
+      h2 { font-size: 17px; }
+      .sub { font-size: 13px; }
+      .rank-list { grid-template-columns: 1fr; gap: 8px; }
+      .rank-card { padding: 11px; }
+      .rank-head { grid-template-columns: auto 1fr; }
+      .rank-head .btn { grid-column: 2; width: max-content; }
+      dl { grid-template-columns: 92px 1fr; }
+      input, button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>QDII 额度动态查询</h1>
+      <div class="nav-btns">
+        <button class="nav-btn" onclick="document.getElementById('sectionTop').scrollIntoView({behavior:'smooth'})">QDII近一年业绩前20</button>
+        <button class="nav-btn" onclick="document.getElementById('sectionLimitTop').scrollIntoView({behavior:'smooth'})">QDII限购额度前20</button>
+        <button class="nav-btn" onclick="document.getElementById('sectionQuery').scrollIntoView({behavior:'smooth'})">按基金代码查询</button>
+      </div>
+    </div>
+  </header>
+  <main class="wrap">
+
+    <section id="sectionTop" class="card">
+      <h2>QDII近一年业绩前20</h2>
+      <p class="note">按近一年收益排序，筛选纳指、标普、海外科技、全球成长、新兴市场、AI/硬科技等相关 QDII 产品。A/C 类份额分别列示。</p>
+      <div class="links">
+        <button id="refreshTop" type="button">🔄 刷新榜单</button>
+      </div>
+      <div id="topList" class="loading" style="margin-top:12px">正在加载榜单...</div>
+    </section>
+
+    <section id="sectionLimitTop" class="card" style="margin-top:14px">
+      <h2>QDII限购额度前20</h2>
+      <p class="note">按单日购买上限从大到小排序。未识别具体金额的靠后展示。限购越宽，不代表越值得买。</p>
+      <div class="links">
+        <button id="refreshLimitTop" type="button">🔄 刷新榜单</button>
+      </div>
+      <div id="limitTopList" class="loading" style="margin-top:12px">正在加载限购榜...</div>
+    </section>
+
+    <section id="sectionQuery" class="card" style="margin-top:14px">
+      <h2>按基金代码查询</h2>
+      <section class="search">
+        <div>
+          <label for="code">基金代码</label>
+          <input id="code" inputmode="numeric" maxlength="6" value="159696">
+        </div>
+        <button id="query">查询</button>
+      </section>
+      <p class="note">查询举例（点击快速填入）：</p>
+      <div class="chips" id="chips"></div>
+      <div class="result" style="margin-top:14px">
+        <h2>查询结果</h2>
+        <div id="result">输入代码后点击查询，或点击上方示例。</div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:14px">
+      <p class="note" style="margin:0">
+        数据来源：天天基金实时净值接口（JSONP）+ 东方财富移动端 API + 榜单数据定期更新（来源：东方财富 QDII 排行 + 天天基金档案）。QDII 额度和限购变化很快，最终以基金公司公告、交易软件和销售平台为准。榜单数据截止日期：2026-06-13。
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // ========== 硬编码基金数据库（每周更新） ==========
+    const FUND_DB = [
+      {code:"012920", short_name:"易方达全球成长精选混合(QDII)人民币A", full_name:"易方达全球成长精选混合型证券投资基金(QDII)", fund_type:"QDII-混合偏股", one_year_return:"200.25", limit_summary:"单日累计购买上限20元", limit_amount:20, trading_status:"限大额（单日累计购买上限20元）开放赎回", scale:"37.05亿元（2026-03-31）", benchmark:"MSCI全球指数收益率*30%+中证港股通综合指数收益率*25%+中证800指数收益率*30%+中债总全价指数收益率*15%", fund_url:"https://fundf10.eastmoney.com/jbgk_012920.html"},
+      {code:"012922", short_name:"易方达全球成长精选混合(QDII)人民币C", full_name:"易方达全球成长精选混合型证券投资基金(QDII)", fund_type:"QDII-混合偏股", one_year_return:"198.83", limit_summary:"单日累计购买上限20元", limit_amount:20, trading_status:"限大额（单日累计购买上限20元）开放赎回", scale:"61.61亿元（2026-03-31）", benchmark:"MSCI全球指数收益率*30%+中证港股通综合指数收益率*25%+中证800指数收益率*30%+中债总全价指数收益率*15%", fund_url:"https://fundf10.eastmoney.com/jbgk_012922.html"},
+      {code:"016664", short_name:"天弘全球高端制造混合(QDII)A", full_name:"天弘全球高端制造混合型证券投资基金(QDII)A", fund_type:"QDII-混合偏股", one_year_return:"174.89", limit_summary:"单日累计购买上限100元", limit_amount:100, trading_status:"限大额（单日累计购买上限100元）开放赎回", scale:"5.61亿元（2026-03-31）", benchmark:"中证高端装备制造指数收益率*40%+标普Kensho先进制造业指数收益率*40%+中证全债指数收益率*20%", fund_url:"https://fundf10.eastmoney.com/jbgk_016664.html"},
+      {code:"016665", short_name:"天弘全球高端制造混合(QDII)C", full_name:"天弘全球高端制造混合型证券投资基金(QDII)C", fund_type:"QDII-混合偏股", one_year_return:"173.97", limit_summary:"单日累计购买上限100元", limit_amount:100, trading_status:"限大额（单日累计购买上限100元）开放赎回", scale:"14.25亿元（2026-03-31）", benchmark:"中证高端装备制造指数收益率*40%+标普Kensho先进制造业指数收益率*40%+中证全债指数收益率*20%", fund_url:"https://fundf10.eastmoney.com/jbgk_016665.html"},
+      {code:"017730", short_name:"嘉实全球产业升级股票发起式(QDII)A", full_name:"嘉实全球产业升级股票型发起式证券投资基金(QDII)A", fund_type:"QDII-普通股票", one_year_return:"144.56", limit_summary:"单日累计购买上限100元", limit_amount:100, trading_status:"限大额（单日累计购买上限100元）开放赎回", scale:"9.22亿元（2026-03-31）", benchmark:"MSCI全球指数收益率*75%+沪深300指数收益率*20%+境内银行活期存款利率(税后)*5%", fund_url:"https://fundf10.eastmoney.com/jbgk_017730.html"},
+      {code:"017731", short_name:"嘉实全球产业升级股票发起式(QDII)C", full_name:"嘉实全球产业升级股票型发起式证券投资基金(QDII)C", fund_type:"QDII-普通股票", one_year_return:"143.08", limit_summary:"单日累计购买上限100元", limit_amount:100, trading_status:"限大额（单日累计购买上限100元）开放赎回", scale:"11.50亿元（2026-03-31）", benchmark:"MSCI全球指数收益率*75%+沪深300指数收益率*20%+境内银行活期存款利率(税后)*5%", fund_url:"https://fundf10.eastmoney.com/jbgk_017731.html"},
+      {code:"539002", short_name:"建信新兴市场混合(QDII)A", full_name:"建信新兴市场优选混合型证券投资基金", fund_type:"QDII-混合偏股", one_year_return:"137.89", limit_summary:"单日累计购买上限30元", limit_amount:30, trading_status:"限大额（单日累计购买上限30元）开放赎回", scale:"11.20亿元（2026-03-31）", benchmark:"MSCI Emerging Markets Index (Net Total Return)", fund_url:"https://fundf10.eastmoney.com/jbgk_539002.html"},
+      {code:"018147", short_name:"建信新兴市场混合(QDII)C", full_name:"建信新兴市场优选混合型证券投资基金", fund_type:"QDII-混合偏股", one_year_return:"136.82", limit_summary:"单日累计购买上限30元", limit_amount:30, trading_status:"限大额（单日累计购买上限30元）开放赎回", scale:"34.49亿元（2026-03-31）", benchmark:"MSCI Emerging Markets Index (Net Total Return)", fund_url:"https://fundf10.eastmoney.com/jbgk_018147.html"},
+      {code:"006373", short_name:"国富全球科技互联混合(QDII)人民币A", full_name:"国富全球科技互联混合型证券投资基金(QDII)人民币A", fund_type:"QDII-混合偏股", one_year_return:"104.41", limit_summary:"单日累计购买上限100元", limit_amount:100, trading_status:"限大额（单日累计购买上限100元）开放赎回", scale:"29.89亿元（2026-03-31）", benchmark:"MSCI全球信息科技指数收益率*40%+中证海外中国互联网指数收益率*40%+人民币活期存款利率(税后)*20%", fund_url:"https://fundf10.eastmoney.com/jbgk_006373.html"},
+      {code:"021842", short_name:"国富全球科技互联混合(QDII)人民币C", full_name:"国富全球科技互联混合型证券投资基金(QDII)人民币C", fund_type:"QDII-混合偏股", one_year_return:"103.53", limit_summary:"单日累计购买上限100元", limit_amount:100, trading_status:"限大额（单日累计购买上限100元）开放赎回", scale:"9.93亿元（2026-03-31）", benchmark:"MSCI全球信息科技指数收益率*40%+中证海外中国互联网指数收益率*40%+人民币活期存款利率(税后)*20%", fund_url:"https://fundf10.eastmoney.com/jbgk_021842.html"},
+      {code:"100055", short_name:"富国全球科技互联网股票(QDII)A", full_name:"富国全球科技互联网股票型证券投资基金(QDII)A", fund_type:"QDII-普通股票", one_year_return:"96.25", limit_summary:"单日累计购买上限1000元", limit_amount:1000, trading_status:"限大额（单日累计购买上限1000元）开放赎回", scale:"12.46亿元（2026-03-31）", benchmark:"中证海外中国互联网指数(美元)收益率*55%+纳斯达克100指数收益率*30%+中证互联网指数收益率*5%+中债国债总全价(1-3年)指数收益率*10%", fund_url:"https://fundf10.eastmoney.com/jbgk_100055.html"},
+      {code:"005698", short_name:"华夏全球科技先锋混合(QDII)A(人民币)", full_name:"华夏全球科技先锋混合型证券投资基金(QDII)A(人民币)", fund_type:"QDII-混合偏股", one_year_return:"96.23", limit_summary:"单日累计购买上限2500元", limit_amount:2500, trading_status:"限大额（单日累计购买上限2500元）开放赎回", scale:"33.00亿元（2026-03-31）", benchmark:"中证TMT产业主题指数收益率*30%+中证香港美国上市中美科技指数收益率*40%+上证国债指数收益率*30%", fund_url:"https://fundf10.eastmoney.com/jbgk_005698.html"},
+      {code:"022184", short_name:"富国全球科技互联网股票(QDII)C", full_name:"富国全球科技互联网股票型证券投资基金(QDII)C", fund_type:"QDII-普通股票", one_year_return:"95.32", limit_summary:"单日累计购买上限1000元", limit_amount:1000, trading_status:"限大额（单日累计购买上限1000元）开放赎回", scale:"8.34亿元（2026-03-31）", benchmark:"中证海外中国互联网指数(美元)收益率*55%+纳斯达克100指数收益率*30%+中证互联网指数收益率*5%+中债国债总全价(1-3年)指数收益率*10%", fund_url:"https://fundf10.eastmoney.com/jbgk_022184.html"},
+      {code:"024239", short_name:"华夏全球科技先锋混合(QDII)C", full_name:"华夏全球科技先锋混合型证券投资基金(QDII)C", fund_type:"QDII-混合偏股", one_year_return:"94.64", limit_summary:"单日累计购买上限2500元", limit_amount:2500, trading_status:"限大额（单日累计购买上限2500元）开放赎回", scale:"13.94亿元（2026-03-31）", benchmark:"中证TMT产业主题指数收益率*30%+中证香港美国上市中美科技指数收益率*40%+上证国债指数收益率*30%", fund_url:"https://fundf10.eastmoney.com/jbgk_024239.html"},
+      {code:"017653", short_name:"创金合信全球芯片产业股票发起(QDII)A", full_name:"创金合信全球芯片产业股票型发起式证券投资基金(QDII)A", fund_type:"QDII-普通股票", one_year_return:"79.64", limit_summary:"单日累计购买上限500元", limit_amount:500, trading_status:"限大额（单日累计购买上限500元）开放赎回", scale:"0.67亿元（2026-03-31）", benchmark:"中证全球半导体产业指数收益率*85%+中债总指数收益率*15%", fund_url:"https://fundf10.eastmoney.com/jbgk_017653.html"},
+      {code:"017654", short_name:"创金合信全球芯片产业股票发起(QDII)C", full_name:"创金合信全球芯片产业股票型发起式证券投资基金(QDII)C", fund_type:"QDII-普通股票", one_year_return:"78.65", limit_summary:"单日累计购买上限500元", limit_amount:500, trading_status:"限大额（单日累计购买上限500元）开放赎回", scale:"2.14亿元（2026-03-31）", benchmark:"中证全球半导体产业指数收益率*85%+中债总指数收益率*15%", fund_url:"https://fundf10.eastmoney.com/jbgk_017654.html"},
+      {code:"501312", short_name:"华宝海外科技股票(QDII-LOF)A", full_name:"华宝海外科技股票型证券投资基金(QDII-LOF)A", fund_type:"QDII-普通股票", one_year_return:"36.43", limit_summary:"单日累计购买上限100元", limit_amount:100, trading_status:"限大额（单日累计购买上限100元）开放赎回", scale:"7.99亿元（2026-03-31）", benchmark:"经人民币汇率调整的纳斯达克100指数收益率*80%+恒生科技指数收益率*10%+中证综合债指数收益率*10%", fund_url:"https://fundf10.eastmoney.com/jbgk_501312.html"},
+      {code:"017204", short_name:"华宝海外科技股票(QDII-LOF)C", full_name:"华宝海外科技股票型证券投资基金(QDII-LOF)C", fund_type:"QDII-普通股票", one_year_return:"36.02", limit_summary:"单日累计购买上限100元", limit_amount:100, trading_status:"限大额（单日累计购买上限100元）开放赎回", scale:"5.17亿元（2026-03-31）", benchmark:"经人民币汇率调整的纳斯达克100指数收益率*80%+恒生科技指数收益率*10%+中证综合债指数收益率*10%", fund_url:"https://fundf10.eastmoney.com/jbgk_017204.html"},
+      {code:"012535", short_name:"万家全球成长一年持有期混合(QDII)A", full_name:"万家全球成长一年持有期混合型证券投资基金(QDII)A", fund_type:"QDII-混合偏股", one_year_return:"27.76", limit_summary:"开放申购", limit_amount:-1, trading_status:"开放申购 开放赎回", scale:"6.43亿元（2026-03-31）", benchmark:"沪深300指数收益率*50%+恒生指数收益率*20%+纳斯达克100指数收益率*10%+中债综合指数收益率*20%", fund_url:"https://fundf10.eastmoney.com/jbgk_012535.html"},
+      {code:"012536", short_name:"万家全球成长一年持有期混合(QDII)C", full_name:"万家全球成长一年持有期混合型证券投资基金(QDII)C", fund_type:"QDII-混合偏股", one_year_return:"27.01", limit_summary:"开放申购", limit_amount:-1, trading_status:"开放申购 开放赎回", scale:"1.83亿元（2026-03-31）", benchmark:"沪深300指数收益率*50%+恒生指数收益率*20%+纳斯达克100指数收益率*10%+中债综合指数收益率*20%", fund_url:"https://fundf10.eastmoney.com/jbgk_012536.html"},
+      {code:"019075", short_name:"嘉实全球产业精选混合发起式(QDII)人民币", full_name:"嘉实全球产业精选混合型发起式证券投资基金(QDII)人民币", fund_type:"QDII-混合偏股", one_year_return:"22.70", limit_summary:"开放申购", limit_amount:-1, trading_status:"开放申购 开放赎回", scale:"0.24亿元（2026-03-31）", benchmark:"MSCI全球指数收益率*35%+沪深300指数收益率*35%+中债综合指数收益率*25%+境内银行活期存款利率(税后)*5%", fund_url:"https://fundf10.eastmoney.com/jbgk_019075.html"},
+      {code:"017436", short_name:"华宝纳斯达克精选股票发起式(QDII)A", full_name:"华宝纳斯达克精选股票型发起式证券投资基金(QDII)A", fund_type:"QDII-普通股票", one_year_return:"22.44", limit_summary:"单日累计购买上限1000元", limit_amount:1000, trading_status:"限大额（单日累计购买上限1000元）开放赎回", scale:"39.51亿元（2026-03-31）", benchmark:"经人民币汇率调整的纳斯达克100指数收益率*90%+人民币活期存款税后利率*10%", fund_url:"https://fundf10.eastmoney.com/jbgk_017436.html"}
+    ];
+
+    const DATA_VERSION = "2026-06-13";
+
+    // ========== 实时净值缓存 ==========
+    const navCache = {};
+    const navCallbacks = {};
+    let pendingScripts = {};
+
+    // JSONP 回调：fundgz.1234567.com.cn 固定使用 jsonpgz 作为回调名
+    window.jsonpgz = function(data) {
+      if (!data || !data.fundcode) return;
+      const code = data.fundcode;
+      navCache[code] = data;
+      updateNavInAllCards(code, data);
+
+      // 通知等待中的 Promise
+      if (navCallbacks[code]) {
+        navCallbacks[code](data);
+        delete navCallbacks[code];
+      }
+
+      // 清理 script 标签
+      if (pendingScripts[code]) {
+        try { document.head.removeChild(pendingScripts[code]); } catch(e) {}
+        delete pendingScripts[code];
+      }
+    };
+
+    function escapeHtml(text) {
+      var map = {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"};
+      return String(text || "").replace(/[&<>"']/g, function(ch) { return map[ch] || ch; });
+    }
+
+    function link(url, label) {
+      return '<a class="btn" href="' + escapeHtml(url) + '" target="_blank" rel="noreferrer">' + escapeHtml(label) + '</a>';
+    }
+
+    function fmtPct(v) {
+      if (v === null || v === undefined || v === "") return "-";
+      const n = parseFloat(v);
+      if (isNaN(n)) return v;
+      return (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+    }
+
+    function navHtml(data) {
+      const pct = parseFloat(data.gszzl);
+      const cls = pct >= 0 ? "nav-up" : "nav-down";
+      const val = data.gsz !== undefined ? data.gsz : data.dwjz;
+      return '<span class="' + cls + '">' + escapeHtml(val) + '</span> <span class="' + cls + '">' + fmtPct(data.gszzl) + '</span>';
+    }
+
+    // ========== 更新所有卡片中的实时净值 ==========
+    function updateNavInAllCards(code, data) {
+      const cards = document.querySelectorAll('.rank-card[data-code="' + code + '"]');
+      cards.forEach(function(card) {
+        const navEl = card.querySelector('.rank-nav');
+        if (navEl) {
+          navEl.innerHTML = navHtml(data);
+        }
+      });
+    }
+
+    // ========== 加载单只基金实时净值（JSONP） ==========
+    function fetchNavJsonp(code) {
+      return new Promise(function(resolve) {
+        // 已缓存，直接返回
+        if (navCache[code]) {
+          resolve(navCache[code]);
+          return;
+        }
+        // 已发起请求但尚未返回，复用同一个回调
+        if (navCallbacks[code]) {
+          const prev = navCallbacks[code];
+          navCallbacks[code] = function(d) { prev(d); resolve(d); };
+          return;
+        }
+
+        navCallbacks[code] = resolve;
+
+        var script = document.createElement("script");
+        script.src = "//fundgz.1234567.com.cn/js/" + code + ".js?rt=" + Date.now();
+        script.async = true;
+        script.onerror = function() {
+          delete navCallbacks[code];
+          try { document.head.removeChild(script); } catch(e) {}
+          delete pendingScripts[code];
+          resolve(null);
+        };
+        pendingScripts[code] = script;
+        document.head.appendChild(script);
+
+        // 超时兜底
+        setTimeout(function() {
+          if (navCallbacks[code]) {
+            delete navCallbacks[code];
+            try { document.head.removeChild(script); } catch(e) {}
+            delete pendingScripts[code];
+            resolve(null);
+          }
+        }, 8000);
+      });
+    }
+
+    // ========== 批量加载（串行，避免并发限制） ==========
+    function fetchAllNav(codes, onProgress) {
+      var completed = 0;
+      var total = codes.length;
+
+      function next(i) {
+        if (i >= total) {
+          if (onProgress) onProgress(total, total);
+          return;
+        }
+        fetchNavJsonp(codes[i]).then(function() {
+          completed++;
+          if (onProgress) onProgress(completed, total);
+          // 每只间隔 300ms，避免被限
+          setTimeout(function() { next(i + 1); }, 300);
+        }).catch(function() {
+          completed++;
+          if (onProgress) onProgress(completed, total);
+          setTimeout(function() { next(i + 1); }, 300);
+        });
+      }
+      next(0);
+    }
+
+    // ========== 渲染榜单 ==========
+    function renderTopList() {
+      var sorted = FUND_DB.slice().sort(function(a, b) {
+        return parseFloat(b.one_year_return) - parseFloat(a.one_year_return);
+      });
+      var rows = sorted.map(function(item, idx) {
+        return '<article class="rank-card" data-code="' + item.code + '">' +
+          '<div class="rank-head">' +
+            '<span class="rank-no">' + (idx + 1) + '</span>' +
+            '<div>' +
+              '<div class="rank-title">' + escapeHtml(item.short_name) + '</div>' +
+              '<div class="mini">' + escapeHtml(item.code) + ' · ' + escapeHtml(item.fund_type) + '</div>' +
+            '</div>' +
+            link(item.fund_url, "档案") +
+          '</div>' +
+          '<div class="mini" style="margin-top:6px;color:var(--muted)">基准：' + escapeHtml(item.benchmark) + '</div>' +
+          '<div class="rank-meta">' +
+            '<div>' +
+              '<div class="mini">近一年</div>' +
+              '<div class="positive">' + escapeHtml(item.one_year_return) + '%</div>' +
+            '</div>' +
+            '<div>' +
+              '<span class="pill">' + escapeHtml(item.limit_summary) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</article>';
+      }).join('');
+      document.getElementById("topList").innerHTML = '<div class="rank-list">' + rows + '</div>';
+    }
+
+    function renderLimitTopList() {
+      var sorted = FUND_DB.slice().sort(function(a, b) {
+        var aa = a.limit_amount < 0 ? 999999 : a.limit_amount;
+        var bb = b.limit_amount < 0 ? 999999 : b.limit_amount;
+        return bb - aa;
+      }).slice(0, 20);
+      var rows = sorted.map(function(item, idx) {
+        return '<article class="rank-card" data-code="' + item.code + '">' +
+          '<div class="rank-head">' +
+            '<span class="rank-no">' + (idx + 1) + '</span>' +
+            '<div>' +
+              '<div class="rank-title">' + escapeHtml(item.short_name) + '</div>' +
+              '<div class="mini">' + escapeHtml(item.code) + ' · ' + escapeHtml(item.fund_type) + '</div>' +
+            '</div>' +
+            link(item.fund_url, "档案") +
+          '</div>' +
+          '<div class="mini" style="margin-top:6px;color:var(--muted)">基准：' + escapeHtml(item.benchmark) + '</div>' +
+          '<div class="rank-meta">' +
+            '<div>' +
+              '<div class="mini">限购额度</div>' +
+              '<div class="positive">' + escapeHtml(item.limit_summary) + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<span class="pill">近一年 ' + escapeHtml(item.one_year_return) + '%</span>' +
+            '</div>' +
+          '</div>' +
+        '</article>';
+      }).join('');
+      document.getElementById("limitTopList").innerHTML = '<div class="rank-list">' + rows + '</div>';
+    }
+
+    // ========== 基金代码查询 ==========
+    // 通过 pingzhongdata 加载任意基金的基本信息（用于不在清单中的基金）
+    function fetchPingZhongData(code) {
+      return new Promise(function(resolve) {
+        var script = document.createElement("script");
+        script.src = "//fund.eastmoney.com/pingzhongdata/" + code + ".js?rt=" + Date.now();
+        script.async = true;
+        script.onload = function() {
+          var scale = "";
+          // 从 Data_fluctuationScale 提取最新规模
+          if (typeof Data_fluctuationScale !== "undefined" && Data_fluctuationScale) {
+            try {
+              var series = Data_fluctuationScale.series || Data_fluctuationScale;
+              var categories = Data_fluctuationScale.categories || [];
+              if (Array.isArray(series) && series.length > 0) {
+                var lastItem = series[series.length - 1];
+                var scaleVal = (typeof lastItem === "object" && lastItem.y !== undefined) ? lastItem.y : lastItem;
+                var scaleDate = categories.length > 0 ? categories[categories.length - 1] : "";
+                scale = scaleVal + "亿元" + (scaleDate ? "（" + scaleDate + "）" : "");
+              }
+            } catch(e) {}
+          }
+          var data = {
+            name: (typeof fS_name !== "undefined") ? fS_name : "",
+            code: (typeof fS_code !== "undefined") ? fS_code : code,
+            syl_1n: (typeof syl_1n !== "undefined") ? syl_1n : "",
+            syl_6y: (typeof syl_6y !== "undefined") ? syl_6y : "",
+            syl_3y: (typeof syl_3y !== "undefined") ? syl_3y : "",
+            syl_1y: (typeof syl_1y !== "undefined") ? syl_1y : "",
+            scale: scale
+          };
+          try { document.head.removeChild(script); } catch(e) {}
+          resolve(data);
+        };
+        script.onerror = function() {
+          try { document.head.removeChild(script); } catch(e) {}
+          resolve(null);
+        };
+        document.head.appendChild(script);
+        setTimeout(function() {
+          try { document.head.removeChild(script); } catch(e) {}
+          resolve(null);
+        }, 10000);
+      });
+    }
+
+    // 通过东方财富移动端API获取基金详细信息（业绩基准、限购金额、规模等）
+    function fetchFundBasicInfo(code) {
+      var url = "https://fundmobapi.eastmoney.com/FundMNewApi/FundMNNBasicInformation?"
+        + "version=6.2.4&plat=Android&appType=ttjj"
+        + "&FCODE=" + code
+        + "&onFundCache=3&keeeeeyparam=FCODE"
+        + "&deviceid=656c09923c567b89bb44801020bc59ab%7C%7Ciemi_tluafed_me"
+        + "&igggggnoreburst=true&product=EFund"
+        + "&MobileKey=656c09923c567b89bb44801020bc59ab%7C%7Ciemi_tluafed_me";
+      return fetch(url).then(function(res) { return res.json(); }).then(function(json) {
+        if (!json || !json.Success || !json.Datas) return null;
+        var d = json.Datas;
+        var scale = "";
+        if (d.ENDNAV && d.FEGMRQ) {
+          var navYi = (parseFloat(d.ENDNAV) / 1e8).toFixed(2);
+          scale = navYi + "亿元（" + d.FEGMRQ + "）";
+        }
+        var limitText = "";
+        if (d.SGZT === "开放申购") {
+          limitText = "开放申购";
+        } else if (d.MAXSG && d.MAXSG !== "--") {
+          limitText = "单日累计购买上限" + d.MAXSG + "元";
+        } else if (d.SGZT && d.SGZT !== "--") {
+          limitText = d.SGZT;
+        }
+        return {
+          benchmark: d.BENCH && d.BENCH !== "--" ? d.BENCH : "",
+          limitText: limitText,
+          scale: scale,
+          fundType: d.FTYPE || "",
+          purchaseStatus: d.SGZT || "",
+          redeemStatus: d.SHZT || "",
+          minPurchase: d.MINSG || "",
+          riskLevel: d.RISKLEVEL || ""
+        };
+      }).catch(function() { return null; });
+    }
+
+    function queryFund() {
+      var code = document.getElementById("code").value.replace(/\D/g, "").slice(0, 6);
+      document.getElementById("code").value = code;
+      var result = document.getElementById("result");
+
+      if (code.length !== 6) {
+        result.innerHTML = "请输入 6 位基金代码。";
+        return;
+      }
+
+      result.innerHTML = "正在查询基金信息...";
+
+      var dbItem = FUND_DB.find(function(f) { return f.code === code; });
+
+      if (dbItem) {
+        // 在清单内的基金：直接显示硬编码数据
+        result.innerHTML =
+          "<h3>" + escapeHtml(dbItem.short_name) + "</h3>" +
+          '<div class="meta">' + escapeHtml(code) + " · " + escapeHtml(dbItem.fund_type) + "</div>" +
+          "<dl>" +
+            "<dt>基金全称</dt><dd>" + escapeHtml(dbItem.full_name) + "</dd>" +
+            "<dt>基金类型</dt><dd>" + escapeHtml(dbItem.fund_type) + "</dd>" +
+            "<dt>基金规模</dt><dd>" + escapeHtml(dbItem.scale) + "</dd>" +
+            "<dt>业绩基准</dt><dd>" + escapeHtml(dbItem.benchmark) + "</dd>" +
+            "<dt>近一年收益</dt><dd>" + escapeHtml(dbItem.one_year_return) + "%</dd>" +
+            "<dt>限购金额</dt><dd>" + escapeHtml(dbItem.limit_summary) + "</dd>" +
+            "<dt>交易状态</dt><dd>" + escapeHtml(dbItem.trading_status) + "</dd>" +
+          "</dl>" +
+          '<div class="links">' +
+            link(dbItem.fund_url, "天天基金档案") +
+          "</div>";
+      } else {
+        // 不在清单内的基金：并行调用 pingzhongdata + 移动端API
+        Promise.all([fetchPingZhongData(code), fetchFundBasicInfo(code)]).then(function(res) {
+          var pzData = res[0];
+          var basicInfo = res[1];
+
+          if (!pzData || !pzData.name) {
+            // pingzhongdata 也未返回，尝试用移动端API数据
+            if (basicInfo) {
+              result.innerHTML =
+                "<h3>基金代码 " + escapeHtml(code) + "</h3>" +
+                "<dl>" +
+                  (basicInfo.benchmark ? "<dt>业绩基准</dt><dd>" + escapeHtml(basicInfo.benchmark) + "</dd>" : "") +
+                  (basicInfo.limitText ? "<dt>限购金额</dt><dd>" + escapeHtml(basicInfo.limitText) + "</dd>" : "") +
+                  (basicInfo.scale ? "<dt>基金规模</dt><dd>" + escapeHtml(basicInfo.scale) + "</dd>" : "") +
+                "</dl>" +
+                '<div class="links">' +
+                  link("https://fundf10.eastmoney.com/jbgk_" + code + ".html", "天天基金档案") +
+                "</div>";
+            } else {
+              result.innerHTML =
+                "<h3>基金代码 " + escapeHtml(code) + "</h3>" +
+                '<p class="note">未找到该基金信息，请确认代码是否正确。</p>' +
+                '<div class="links">' +
+                  link("https://fundf10.eastmoney.com/jbgk_" + code + ".html", "天天基金档案") +
+                "</div>";
+            }
+            return;
+          }
+
+          // 收益率
+          var sylHtml = "";
+          if (pzData.syl_1n || pzData.syl_6y || pzData.syl_3y || pzData.syl_1y) {
+            sylHtml = "<dl>" +
+              (pzData.syl_1n ? "<dt>近一年收益</dt><dd>" + escapeHtml(pzData.syl_1n) + "%</dd>" : "") +
+              (pzData.syl_6y ? "<dt>近六月收益</dt><dd>" + escapeHtml(pzData.syl_6y) + "%</dd>" : "") +
+              (pzData.syl_3y ? "<dt>近三月收益</dt><dd>" + escapeHtml(pzData.syl_3y) + "%</dd>" : "") +
+              (pzData.syl_1y ? "<dt>近一月收益</dt><dd>" + escapeHtml(pzData.syl_1y) + "%</dd>" : "") +
+              "</dl>";
+          }
+
+          // 合并数据：优先使用移动端API的业绩基准/限购/规模
+          var scaleText = (basicInfo && basicInfo.scale) ? basicInfo.scale : (pzData.scale || "—");
+          var benchText = (basicInfo && basicInfo.benchmark) ? basicInfo.benchmark : "—";
+          var limitText = (basicInfo && basicInfo.limitText) ? basicInfo.limitText : "—";
+          var fundType = (basicInfo && basicInfo.fundType) ? basicInfo.fundType : "";
+
+          result.innerHTML =
+            "<h3>" + escapeHtml(pzData.name) + "</h3>" +
+            '<div class="meta">' + escapeHtml(code) + (fundType ? " · " + escapeHtml(fundType) : "") + "</div>" +
+            sylHtml +
+            "<dl>" +
+              "<dt>基金规模</dt><dd>" + escapeHtml(scaleText) + "</dd>" +
+              "<dt>业绩基准</dt><dd>" + escapeHtml(benchText) + "</dd>" +
+              "<dt>限购金额</dt><dd>" + escapeHtml(limitText) + "</dd>" +
+            "</dl>" +
+            '<div class="links">' +
+              link("https://fundf10.eastmoney.com/jbgk_" + code + ".html", "天天基金档案") +
+            "</div>";
+        });
+      }
+    }
+
+    // ========== 示例 chips ==========
+    var examples = [
+      ["159696", "纳指ETF易方达"],
+      ["161128", "标普信息科技"],
+      ["012920", "全球成长精选A"]
+    ];
+    var chipsEl = document.getElementById("chips");
+    examples.forEach(function(pair) {
+      var chip = document.createElement("button");
+      chip.className = "chip";
+      chip.textContent = pair[0] + " " + pair[1];
+      chip.addEventListener("click", function() {
+        document.getElementById("code").value = pair[0];
+        queryFund();
+      });
+      chipsEl.appendChild(chip);
+    });
+
+    // ========== 按钮事件 ==========
+    document.getElementById("refreshTop").addEventListener("click", function() {
+      renderTopList();
+    });
+
+    document.getElementById("refreshLimitTop").addEventListener("click", function() {
+      renderLimitTopList();
+    });
+
+    document.getElementById("query").addEventListener("click", queryFund);
+    document.getElementById("code").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") queryFund();
+    });
+
+    // ========== 初始渲染 ==========
+    renderTopList();
+    renderLimitTopList();
+  </script>
+</body>
+</html>
